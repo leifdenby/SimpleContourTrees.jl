@@ -2,20 +2,18 @@ using Contour
 using Plots
 using PolygonOps
 
-dx = 0.01
-xs = 0.0:dx:4.0
-ys = 0.0:dx:4.0
+include("example_data.jl")
 
-gauss_2d(x, y, σ; x0=0.0, y0=0.0) = exp(-((x-x0)^2 + (y-y0)^2)/σ)
-sphere_2d(x, y, r0; x0=0.0, y0=0.0) = (x-x0)^2 + (y-y0)^2 - r0^2
+dx = 0.1
+xs = -10.0:dx:15.0
+ys = -10.0:dx:20.0
 
-phi = [gauss_2d(x, y, 0.5, x0=0.5, y0=0.5) for x in xs, y in ys]
-phi = [sphere_2d(x, y, 1.0, x0=2.0, y0=2.0) for x in xs, y in ys]
-
+phi = [two_gaussians_plus_negative_2d(x, y) for x in xs, y in ys]
 p = plot()
-heatmap!(p, xs, ys, phi)
+# NB: it appears Contour expects the opposite shape to heatmap
+heatmap!(p, xs, ys, phi')
 
-for cl in levels(contours(xs, ys, phi, [0.0,]))
+for cl in levels(contours(xs, ys, phi, [-0.1, 0.0, 0.2]))
     lvl = level(cl)
     for line in lines(cl)
         xs_cnt, ys_cnt = coordinates(line)
@@ -23,8 +21,6 @@ for cl in levels(contours(xs, ys, phi, [0.0,]))
     end
 end
 plot!(p)
-
-pts = coordinates(lines(levels(contours(xs, ys, phi, [0.0]))[1])[1]);
 
 coords2poly(pts) = collect(zip(pts[1], pts[2]))
 
@@ -38,6 +34,38 @@ function area(poly::T) where T
     return a/2
 end
 
+
+function plot_area_levels(levs)
+    p_hm = heatmap(xs, ys, phi')
+    areas = []
+    area_levs = []
+    for cl in levels(contours(xs, ys, phi, levs))
+        lvl = level(cl)
+        for line in lines(cl)
+            pts = coordinates(line)
+            plot!(p_hm, pts[1], pts[2], label=nothing, color=:black, linestyle=:dash)
+            a = abs(area(coords2poly(pts)))
+            push!(areas, a)
+            push!(area_levs, lvl)
+        end
+    end
+    plot(
+        heatmap(xs, ys, phi'),
+        p_hm,
+        scatter(areas, levs, xlabel="area", ylabel="contour value")
+    )
+end
+
+plot_area_levels(-0.9:0.02:0.0)
+plot_area_levels(-0.0:0.02:1.9)
+plot_area_levels(-0.9:0.02:1.9)
+
+# test, area of a circle
+dx = 0.1
+xs = -2.0:dx:2.0
+ys = -2.0:dx:2.0
+phi = [sphere_2d(x, y, 1.0) for x in xs, y in ys]
+pts = coordinates(lines(levels(contours(xs, ys, phi, [0.0]))[1])[1]);
 isapprox(area(coords2poly(pts)), π; rtol=0.01)
 
 ## scratch space below

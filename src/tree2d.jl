@@ -2,25 +2,13 @@
 # - https://discourse.julialang.org/t/most-effective-way-to-check-if-neighboring-values-in-a-matrix-are-the-same/86291/12
 using Plots
 
+include("example_data.jl")
+
 dx = 0.1
 xs = 0.0:dx:10.0
 ys = 0.0:dx:10.0
 
-gauss_2d(x, y, σ; x0=0.0, y0=0.0) = exp(-((x-x0)^2 + (y-y0)^2)/σ^2)
-sphere_2d(x, y, r0; x0=0.0, y0=0.0) = (x-x0)^2 + (y-y0)^2 - r0^2
-
-function two_gaussians_2d(x, y)
-    w = 3.0
-    gauss_2d(x, y, w, x0=2.0, y0=2.0) + gauss_2d(x, y, w, x0=8.0, y0=7.0)
-end
-
-function two_gaussians_plus_negative_2d(x, y)
-    w = 3.0
-    two_gaussians_2d(x, y) - gauss_2d(x, y, w, x0=2.0, y0=7.0)
-end
-
 phi = [two_gaussians_2d(x, y) for x in xs, y in ys]
-
 heatmap(xs, ys, phi)
 
 
@@ -117,11 +105,3 @@ function assign_to_extrema(phi::AbstractArray{T,N}, extrema) where {T, N}
     end
     out
 end
-
-extrema = find_extrema(phi)
-extrema = replace(extrema, -1 => 0)
-plot(
-    heatmap(phi),
-    heatmap(extrema),
-    heatmap(assign_to_extrema(phi, extrema))
-)
